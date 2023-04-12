@@ -1,0 +1,33 @@
+/*
+ * rs232_usart2.h
+ *
+ *  Created on: 2023年4月10日
+ *      Author: 陈骏骏
+ */
+
+#ifndef INC_RS232_USART2_H_
+#define INC_RS232_USART2_H_
+
+#include "main.h"
+
+#define RS232_MAXSIZE 2
+
+extern uint8_t pRS232RxBuff[RS232_MAXSIZE];
+
+typedef enum
+{
+	RS232_RESP_OK = 0x384,
+	RS232_RESP_ERROR = 0x38D,
+	RS232_RESP_LIN_COMM_ERROR = 0x385,
+	RS232_RESP_MC_SHORT = 0x386,
+	RS232_RESP_MC_LOADOPEN = 0x387,
+	RS232_RESP_SHUTDOWN = 0x388,
+	RS232_RESP_ACTUATOR_FAULT = 0x389,
+	RS232_RESP_OVER_VOLTAGE = 0x38A,
+	RS232_RESP_UNDER_VOLTAGE = 0x38B,
+	RS232_RESP_OVERTEMP = 0x38C
+}RS232_Resp_Rsult;
+
+void RS232_Data_Process();
+
+#endif /* INC_RS232_USART2_H_ */
