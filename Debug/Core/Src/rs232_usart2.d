@@ -28,8 +28,7 @@ Core/Src/rs232_usart2.o: ../Core/Src/rs232_usart2.c \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h \
- ../Core/Inc/lin_usart1.h ../Core/Inc/usart.h
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h
 ../Core/Inc/rs232_usart2.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h:
@@ -61,5 +60,3 @@ Core/Src/rs232_usart2.o: ../Core/Src/rs232_usart2.c \
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h:
-../Core/Inc/lin_usart1.h:
-../Core/Inc/usart.h:

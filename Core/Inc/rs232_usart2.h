@@ -28,6 +28,4 @@ typedef enum
 	RS232_RESP_OVERTEMP = 0x38C
 }RS232_Resp_Rsult;
 
-void RS232_Data_Process();
-
 #endif /* INC_RS232_USART2_H_ */

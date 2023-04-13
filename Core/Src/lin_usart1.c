@@ -20,7 +20,11 @@ uint8_t pLINTxBuff[LIN_TX_MAXSIZE];
 //当前测试的电机步长
 uint16_t EXV_Test_Step;
 //发送读取帧的标志位
-uint8_t LIN_Read_Flag;
+uint8_t LIN_Read_Flag = DISABLE;
+//发送写帧的标志位
+uint8_t LIN_Send_Flag = DISABLE;
+//指令重复发送次数
+uint8_t retries = 3;
 
 /****************************************************************************************
 ** 函数名称: LINCheckSum----标准校验
@@ -108,7 +112,46 @@ void LIN_Tx_PID(UART_HandleTypeDef *huart, uint8_t PID)
 }
 
 /**
- * 设置返回给RS232上位机的数据
+ * RS232 to LIN
+ */
+void RS232_To_LIN(uint8_t* pRS232Buff)
+{
+	LIN_Send_Flag = DISABLE;
+	uint8_t index = 0;
+	EXV_Test_Step = (pRS232RxBuff[0] << 8) | pRS232RxBuff[1];
+	pLINTxBuff[index++] = LIN_PID_52_0x34;
+	pLINTxBuff[index++] = pRS232RxBuff[1];
+	pLINTxBuff[index++] = pRS232RxBuff[0];
+	pLINTxBuff[index++] = EXV_MOVE_CMD;
+	pLINTxBuff[index++] = EXV_INIT_NO_REQ;
+	//剩余的字节数有0xFF填充
+	while(index < LIN_TX_MAXSIZE - 1)
+	{
+		pLINTxBuff[index++] = 0xFF;
+	}
+	LIN_Send_Flag = ENABLE;
+}
+
+/**
+ * 发送LIN数据，包括读取帧和写帧
+ */
+void Send_LIN_Data()
+{
+	if(LIN_Send_Flag)
+	{
+		LIN_Tx_PID_Data(&huart1,pLINTxBuff,LIN_TX_MAXSIZE - 1,LIN_CK_ENHANCED);
+		LIN_Send_Flag = DISABLE;
+		LIN_Read_Flag = ENABLE;
+	}
+	if(LIN_Read_Flag)
+	{
+		LIN_Tx_PID(&huart1, LIN_PID_35_0x23);
+		HAL_Delay(200);
+	}
+}
+
+/**
+ * 设置响应给RS232上位机的数据
  */
 void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 {
@@ -116,6 +159,8 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 	*(pBuff + 1) = data;
 	HAL_UART_Transmit(&huart2,pBuff,sizeof(data),HAL_MAX_DELAY);
 	LIN_Read_Flag = DISABLE;
+	retries = 3;
+	memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
 }
 
 /**
@@ -123,16 +168,16 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
  */
 void LIN_Data_Process()
 {
-	LIN_Read_Flag = ENABLE;
 	uint8_t RS232_Resp_Result[2] = {0};
 	uint16_t EXV_Run_Step = 0;
-	if(pLINRxBuff[2] == EXV_F_RESP_ERROR)
+	if((pLINRxBuff[0] & EXV_F_RESP_COMP) == EXV_F_RESP_ERROR)
 	{
 		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_LIN_COMM_ERROR);
 	}
-	else if(pLINRxBuff[5] > 0)
+	else if((pLINRxBuff[1] & EXV_ST_FAULT_COMP) > 0)
 	{
-		switch(pLINRxBuff[5])
+		uint8_t fault_index = pLINRxBuff[1] & EXV_ST_FAULT_COMP;
+		switch(fault_index)
 		{
 		case EXV_ST_FAULT_SHORTED:
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_MC_SHORT);
@@ -148,9 +193,10 @@ void LIN_Data_Process()
 			break;
 		}
 	}
-	else if(pLINRxBuff[6] > 0)
+	else if((pLINRxBuff[1] & EXV_ST_VOLTAGE_COMP) > 0)
 	{
-		switch(pLINRxBuff[6])
+		uint8_t voltage_index = pLINRxBuff[1] & EXV_ST_VOLTAGE_COMP;
+		switch(voltage_index)
 		{
 		case EXV_ST_VOLTAGE_OVER:
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OVER_VOLTAGE);
@@ -160,24 +206,27 @@ void LIN_Data_Process()
 			break;
 		}
 	}
-	else if(pLINRxBuff[7] == EXV_OVERTEMP_OVER)
+	else if((pLINRxBuff[1] & EXV_OVERTEMP_COMP) == EXV_OVERTEMP_OVER)
 	{
 		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OVERTEMP);
 	}
-	else if(pLINRxBuff[3] == EXV_ST_RUN_NOT_MOVE)
+	else if((pLINRxBuff[0] & EXV_ST_RUN_COMP) == EXV_ST_RUN_NOT_MOVE)
 	{
-		EXV_Run_Step = (pLINRxBuff[9] << 8) | pLINRxBuff[8];
+		EXV_Run_Step = (pLINRxBuff[3] << 8) | pLINRxBuff[2];
 		if(EXV_Run_Step == EXV_Test_Step)
 		{
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OK);
 		}
 		else
 		{
-			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ERROR);
+			LIN_Send_Flag = ENABLE;
+			retries--;
+			if(retries <= 0)
+			{
+				Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ERROR);
+				LIN_Send_Flag = DISABLE;
+			}
 		}
 	}
-	if(LIN_Read_Flag)
-	{
-		LIN_Tx_PID(&huart1, LIN_PID_35_0x23);
-	}
+	memset(pLINRxBuff,0,LIN_RX_MAXSIZE);
 }

@@ -16,9 +16,6 @@
 #define LIN_TX_MAXSIZE 10
 
 extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
-extern uint8_t pLINTxBuff[LIN_TX_MAXSIZE];
-//当前测试的电机步长
-extern uint16_t EXV_Test_Step;
 
 //LIN校验模式
 typedef enum
@@ -101,37 +98,41 @@ typedef enum
 //电机使能
 typedef enum
 {
-	EXV_MOVE_IGNORE = 0x00,
-	EXV_MOVE_CMD = 0x01
+	EXV_MOVE_IGNORE = 0xFE,
+	EXV_MOVE_CMD = 0xFF
 }EXV_Move_Enable;
 
 //初始化请求
 typedef enum
 {
-	EXV_INIT_NO_REQ = 0x00,
-	EXV_INIT_START = 0x01,
-	EXV_INIT_WAIT_FINISH = 0x02
+	EXV_INIT_NO_REQ = 0xFC,
+	EXV_INIT_START = 0xFD,
+	EXV_INIT_WAIT_FINISH = 0xFE
 }EXV_Init_Request;
 
+//LIN通信故障反馈
 typedef enum
 {
 	EXV_F_RESP_NO_ERROR = 0x00,
 	EXV_F_RESP_ERROR = 0x01
 }EXV_F_Response;
 
+//初始化状态反馈
 typedef enum
 {
 	EXV_ST_INIT_NOT = 0x00,
-	EXV_ST_INIT_PROCESS = 0x01,
-	EXV_ST_INIT_SUCCESS = 0x02
+	EXV_ST_INIT_PROCESS = 0x04,
+	EXV_ST_INIT_SUCCESS = 0x08
 }EXV_St_Initial;
 
+//运行状态反馈
 typedef enum
 {
 	EXV_ST_RUN_NOT_MOVE = 0x00,
-	EXV_ST_RUN_MOVING = 0x01
+	EXV_ST_RUN_MOVING = 0x10
 }EXV_St_Running;
 
+//故障状态
 typedef enum
 {
 	EXV_ST_FAULT_NOT = 0x00,
@@ -141,21 +142,34 @@ typedef enum
 	EXV_ST_FAULT_ACTUATORFAULT = 0x04
 }EXV_St_Fault;
 
+//电压状态
 typedef enum
 {
 	EXV_ST_VOLTAGE_OK = 0x00,
-	EXV_ST_VOLTAGE_OVER = 0x01,
-	EXV_ST_VOLTAGE_UNDER = 0x02
+	EXV_ST_VOLTAGE_OVER = 0x10,
+	EXV_ST_VOLTAGE_UNDER = 0x20
 }EXV_St_Voltage;
 
+//温度状态
 typedef enum
 {
 	EXV_OVERTEMP_OK = 0x00,
-	EXV_OVERTEMP_OVER = 0x01
+	EXV_OVERTEMP_OVER = 0x40
 }EXV_W_OverTemp;
 
-void LIN_Tx_PID_Data(UART_HandleTypeDef *huart, uint8_t *buf, uint8_t lens, LIN_CK_Mode CK_Mode);
-void LIN_Tx_PID(UART_HandleTypeDef *huart, uint8_t PID);
+//电机信息比较值
+typedef enum
+{
+	EXV_F_RESP_COMP = 0x01,
+	EXV_ST_INIT_COMP = 0x0C,
+	EXV_ST_RUN_COMP = 0x10,
+	EXV_ST_FAULT_COMP = 0x0F,
+	EXV_ST_VOLTAGE_COMP = 0x30,
+	EXV_OVERTEMP_COMP = 0xC0
+}EXV_St_Comp;
+
+void RS232_To_LIN(uint8_t* pRS232Buff);
+void Send_LIN_Data();
 void LIN_Data_Process();
 
 #endif /* INC_LIN_USART1_H_ */

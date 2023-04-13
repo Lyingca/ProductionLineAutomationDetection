@@ -23,9 +23,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
 #include "lin_usart1.h"
 #include "rs232_usart2.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,7 +113,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  //循环发送数据
+	  Send_LIN_Data();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -199,7 +200,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	else if(huart == &huart2)
 	{
 		HAL_UART_Transmit(&huart2, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
-		RS232_Data_Process();
+		RS232_To_LIN(pRS232RxBuff);
+		memset(pRS232RxBuff,0,RS232_MAXSIZE);
 	}
 	Util_Receive_IT(huart);
 }
