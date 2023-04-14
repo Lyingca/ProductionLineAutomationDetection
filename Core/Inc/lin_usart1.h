@@ -14,6 +14,10 @@
 #define LIN_RX_MAXSIZE 11
 //PID（1个字节） + （数据帧 （8个字节）  +  校验和（1个字节））
 #define LIN_TX_MAXSIZE 10
+//不算PID，只有8个数据
+#define LIN_CHECK_STD_NUM 8
+//PID+8个数据
+#define LIN_CHECK_EN_NUM 9
 
 extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
 
@@ -139,7 +143,7 @@ typedef enum
 	EXV_ST_FAULT_SHORTED = 0x01,
 	EXV_ST_FAULT_OPENLOAD = 0x02,
 	EXV_ST_FAULT_OVERTEMP = 0x03,
-	EXV_ST_FAULT_ACTUATORFAULT = 0x04
+	EXV_ST_FAULT_ACTUATORFAULT = 0x05
 }EXV_St_Fault;
 
 //电压状态

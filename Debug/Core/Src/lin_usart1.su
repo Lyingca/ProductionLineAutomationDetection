@@ -5,4 +5,4 @@
 ../Core/Src/lin_usart1.c:117:6:RS232_To_LIN	24	static
 ../Core/Src/lin_usart1.c:138:6:Send_LIN_Data	8	static
 ../Core/Src/lin_usart1.c:156:6:Send_Resp_Data	16	static
-../Core/Src/lin_usart1.c:169:6:LIN_Data_Process	16	static
+../Core/Src/lin_usart1.c:172:6:LIN_Data_Process	24	static

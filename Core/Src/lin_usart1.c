@@ -81,12 +81,12 @@ void LIN_Tx_PID_Data(UART_HandleTypeDef *huart, uint8_t *buf, uint8_t lens, LIN_
     {
     	//arr[i] = *(arr + i)
 		//计算标准型校验码，不计算PID
-		*(buf + lens) = LIN_Check_Sum(buf, lens);
+		*(buf + lens) = LIN_Check_Sum(buf, LIN_CHECK_STD_NUM);
     }
     else
     {
     	//计算增强型校验码,连PID一起校验
-		*(buf + lens) = LIN_Check_Sum_En(buf, lens);
+		*(buf + lens) = LIN_Check_Sum_En(buf, LIN_CHECK_EN_NUM);
     }
 
     //发送同步间隔段
@@ -145,7 +145,7 @@ void Send_LIN_Data()
 	}
 	if(LIN_Read_Flag)
 	{
-		LIN_Tx_PID(&huart1, LIN_PID_35_0x23);
+		LIN_Tx_PID(&huart1, LIN_PID_53_0x35);
 		HAL_Delay(200);
 	}
 }
@@ -158,8 +158,11 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 	*pBuff = data >> 8;
 	*(pBuff + 1) = data;
 	HAL_UART_Transmit(&huart2,pBuff,sizeof(data),HAL_MAX_DELAY);
+	//读取标志位置为不发送读取数据帧
 	LIN_Read_Flag = DISABLE;
+	//重置重试的次数为3
 	retries = 3;
+	//发送响应数据后表示本次测试结束，清空发送数据缓存
 	memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
 }
 
@@ -168,15 +171,29 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
  */
 void LIN_Data_Process()
 {
+	//响应数组
 	uint8_t RS232_Resp_Result[2] = {0};
+	//电机转动步长
 	uint16_t EXV_Run_Step = 0;
-	if((pLINRxBuff[0] & EXV_F_RESP_COMP) == EXV_F_RESP_ERROR)
+	//通过校验位-校验数据
+	uint8_t ckm = 0;
+	//pLINRxBuff + 1表示从接收的第二个数据开始，因为接收数组第一个是同步段（0x55）
+	ckm = LIN_Check_Sum_En(pLINRxBuff + 1,LIN_CHECK_EN_NUM);
+	//如果校验不通过，丢弃这帧数据
+	if(ckm != pLINRxBuff[LIN_RX_MAXSIZE - 1])
+	{
+		return;
+	}
+	//解析数据具有优先级：LIN通信故障->电机故障->电压异常->温度异常->电机停止标志->判断步长
+	//校验LIN通信故障反馈
+	if((pLINRxBuff[2] & EXV_F_RESP_COMP) == EXV_F_RESP_ERROR)
 	{
 		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_LIN_COMM_ERROR);
 	}
-	else if((pLINRxBuff[1] & EXV_ST_FAULT_COMP) > 0)
+	//校验故障状态
+	else if((pLINRxBuff[3] & EXV_ST_FAULT_COMP) > 0)
 	{
-		uint8_t fault_index = pLINRxBuff[1] & EXV_ST_FAULT_COMP;
+		uint8_t fault_index = pLINRxBuff[3] & EXV_ST_FAULT_COMP;
 		switch(fault_index)
 		{
 		case EXV_ST_FAULT_SHORTED:
@@ -193,9 +210,10 @@ void LIN_Data_Process()
 			break;
 		}
 	}
-	else if((pLINRxBuff[1] & EXV_ST_VOLTAGE_COMP) > 0)
+	//校验电压状态
+	else if((pLINRxBuff[3] & EXV_ST_VOLTAGE_COMP) > 0)
 	{
-		uint8_t voltage_index = pLINRxBuff[1] & EXV_ST_VOLTAGE_COMP;
+		uint8_t voltage_index = pLINRxBuff[3] & EXV_ST_VOLTAGE_COMP;
 		switch(voltage_index)
 		{
 		case EXV_ST_VOLTAGE_OVER:
@@ -206,27 +224,34 @@ void LIN_Data_Process()
 			break;
 		}
 	}
-	else if((pLINRxBuff[1] & EXV_OVERTEMP_COMP) == EXV_OVERTEMP_OVER)
+	//校验温度状态
+	else if((pLINRxBuff[3] & EXV_OVERTEMP_COMP) == EXV_OVERTEMP_OVER)
 	{
 		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OVERTEMP);
 	}
-	else if((pLINRxBuff[0] & EXV_ST_RUN_COMP) == EXV_ST_RUN_NOT_MOVE)
+	//电机停止转动
+	else if((pLINRxBuff[2] & EXV_ST_RUN_COMP) == EXV_ST_RUN_NOT_MOVE)
 	{
-		EXV_Run_Step = (pLINRxBuff[3] << 8) | pLINRxBuff[2];
+		//计算电机转动步长，步长低字节在前高字节在后
+		EXV_Run_Step = (pLINRxBuff[5] << 8) | pLINRxBuff[4];
 		if(EXV_Run_Step == EXV_Test_Step)
 		{
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OK);
 		}
+		//重试3次发送电机运动使能
 		else
 		{
 			LIN_Send_Flag = ENABLE;
 			retries--;
+			//当3次电机运动使能后，电机转动步长与测试步长不一致，发送错误信息
 			if(retries <= 0)
 			{
 				Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ERROR);
+				//发送标志置为不发送写数据帧
 				LIN_Send_Flag = DISABLE;
 			}
 		}
 	}
+	//这帧数据解析完成，清空接收缓存数据
 	memset(pLINRxBuff,0,LIN_RX_MAXSIZE);
 }
