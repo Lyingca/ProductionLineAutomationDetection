@@ -25,6 +25,10 @@ uint8_t LIN_Read_Flag = DISABLE;
 uint8_t LIN_Send_Flag = DISABLE;
 //指令重复发送次数
 uint8_t retries = 3;
+//初始化LIN芯片信息
+struct LIN_Chip_Msg chip[2] = {{0xF5,0xB4,0xFF,0xFC},{0x37,0x76,0xFF,0xFC}};
+//芯片编号
+uint8_t chip_Num;
 
 /****************************************************************************************
 ** 函数名称: LINCheckSum----标准校验
@@ -118,12 +122,13 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 {
 	LIN_Send_Flag = DISABLE;
 	uint8_t index = 0;
-	EXV_Test_Step = (pRS232RxBuff[0] << 8) | pRS232RxBuff[1];
-	pLINTxBuff[index++] = LIN_PID_52_0x34;
+	chip_Num = pRS232RxBuff[0];
+	EXV_Test_Step = (pRS232RxBuff[1] << 8) | pRS232RxBuff[2];
+	pLINTxBuff[index++] = chip[chip_Num].write_PID;
+	pLINTxBuff[index++] = pRS232RxBuff[2];
 	pLINTxBuff[index++] = pRS232RxBuff[1];
-	pLINTxBuff[index++] = pRS232RxBuff[0];
-	pLINTxBuff[index++] = EXV_MOVE_CMD;
-	pLINTxBuff[index++] = EXV_INIT_NO_REQ;
+	pLINTxBuff[index++] = chip[chip_Num].EXV_Move_Enable;
+	pLINTxBuff[index++] = chip[chip_Num].EXV_Init_Request;
 	//剩余的字节数有0xFF填充
 	while(index < LIN_TX_MAXSIZE - 1)
 	{
@@ -145,7 +150,7 @@ void Send_LIN_Data()
 	}
 	if(LIN_Read_Flag)
 	{
-		LIN_Tx_PID(&huart1, LIN_PID_53_0x35);
+		LIN_Tx_PID(&huart1, chip[chip_Num].read_PID);
 		HAL_Delay(200);
 	}
 }

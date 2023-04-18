@@ -60,8 +60,8 @@ all: main-build
 main-build: ProductionLineAutomationDetection.elf secondary-outputs
 
 # Tool invocations
-ProductionLineAutomationDetection.elf ProductionLineAutomationDetection.map: $(OBJS) $(USER_OBJS) D:\STMicroelectronics\workspace\ProductionLineAutomationDetection\STM32G070RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "ProductionLineAutomationDetection.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"D:\STMicroelectronics\workspace\ProductionLineAutomationDetection\STM32G070RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ProductionLineAutomationDetection.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+ProductionLineAutomationDetection.elf ProductionLineAutomationDetection.map: $(OBJS) $(USER_OBJS) D:\STMicroelectronics\Workspace\ProductionLineAutomationDetection\STM32G070RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "ProductionLineAutomationDetection.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"D:\STMicroelectronics\Workspace\ProductionLineAutomationDetection\STM32G070RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ProductionLineAutomationDetection.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

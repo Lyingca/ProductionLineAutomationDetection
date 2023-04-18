@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-#define RS232_MAXSIZE 2
+#define RS232_MAXSIZE 3
 
 extern uint8_t pRS232RxBuff[RS232_MAXSIZE];
 

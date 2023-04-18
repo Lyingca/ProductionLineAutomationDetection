@@ -21,6 +21,15 @@
 
 extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
 
+//保存LIN芯片的信息
+struct LIN_Chip_Msg
+{
+	uint8_t read_PID;
+	uint8_t write_PID;
+	uint8_t EXV_Move_Enable;
+	uint8_t EXV_Init_Request;
+};
+
 //LIN校验模式
 typedef enum
 {
