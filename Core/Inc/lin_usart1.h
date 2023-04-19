@@ -108,21 +108,6 @@ typedef enum
 	LIN_PID_63_0x3F = 0xBF
 } LIN_PID_List;
 
-//电机使能
-typedef enum
-{
-	EXV_MOVE_IGNORE = 0xFE,
-	EXV_MOVE_CMD = 0xFF
-}EXV_Move_Enable;
-
-//初始化请求
-typedef enum
-{
-	EXV_INIT_NO_REQ = 0xFC,
-	EXV_INIT_START = 0xFD,
-	EXV_INIT_WAIT_FINISH = 0xFE
-}EXV_Init_Request;
-
 //LIN通信故障反馈
 typedef enum
 {

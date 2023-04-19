@@ -106,6 +106,14 @@ int main(void)
   //开启中断接收
   Util_Receive_IT(&huart1);
   Util_Receive_IT(&huart2);
+
+  //测试
+  pRS232RxBuff[0] = 0x00;
+  pRS232RxBuff[0] = 0x01;
+  pRS232RxBuff[0] = 0x4a;
+  RS232_To_LIN(pRS232RxBuff);
+  //测试 end
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
