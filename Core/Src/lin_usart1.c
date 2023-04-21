@@ -169,6 +169,8 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 	retries = 3;
 	//发送响应数据后表示本次测试结束，清空发送数据缓存
 	memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
+    //清除芯片编号
+    chip_Num = 0;
 }
 
 /**
