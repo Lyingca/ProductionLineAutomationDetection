@@ -10,8 +10,8 @@
 
 #include "main.h"
 
-//1个同步字节（0x55） + PID（1个字节） + （数据帧 （8个字节）  +  校验和（1个字节））
-#define LIN_RX_MAXSIZE 11
+//一个同步间隔段 + 1个同步字节（0x55） + PID（1个字节） + （数据帧 （8个字节）  +  校验和（1个字节））
+#define LIN_RX_MAXSIZE 12
 //PID（1个字节） + （数据帧 （8个字节）  +  校验和（1个字节））
 #define LIN_TX_MAXSIZE 10
 //不算PID，只有8个数据

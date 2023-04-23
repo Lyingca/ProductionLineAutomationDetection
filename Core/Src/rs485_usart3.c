@@ -166,5 +166,5 @@ void auto_zero_setting()
  */
 void RS485_Data_Process()
 {
-	HAL_UART_Transmit(&huart2, pRS485RxBuff, RS485_MAXSIZE, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1, pRS485RxBuff, RS485_MAXSIZE, HAL_MAX_DELAY);
 }

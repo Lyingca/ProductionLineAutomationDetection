@@ -60,7 +60,7 @@ void SystemClock_Config(void);
 
 PUTCHAR_PROTOTYPE
 {
-  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
   return ch;
 }
 
@@ -106,11 +106,12 @@ int main(void)
   //开启中断接收
   Util_Receive_IT(&huart1);
   Util_Receive_IT(&huart2);
+  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_SET);
 
   //测试
   pRS232RxBuff[0] = 0x00;
-  pRS232RxBuff[0] = 0x01;
-  pRS232RxBuff[0] = 0x4a;
+  pRS232RxBuff[1] = 0x01;
+  pRS232RxBuff[2] = 0x4a;
   RS232_To_LIN(pRS232RxBuff);
   //测试 end
 
@@ -174,14 +175,14 @@ void SystemClock_Config(void)
  */
 void Util_Receive_IT(UART_HandleTypeDef *huart)
 {
-	if(huart == &huart1)
+	if(huart == &huart2)
 	{
 		if(HAL_UART_Receive_IT(huart, pLINRxBuff, LIN_RX_MAXSIZE) != HAL_OK)
 		{
 			Error_Handler();
 		}
 	}
-	else if(huart == &huart2)
+	else if(huart == &huart1)
 	{
 		if(HAL_UART_Receive_IT(huart, pRS232RxBuff, RS232_MAXSIZE) != HAL_OK)
 		{
@@ -200,14 +201,14 @@ void Util_Receive_IT(UART_HandleTypeDef *huart)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	//LIN协议
-	if(huart == &huart1)
+	if(huart == &huart2)
 	{
 		LIN_Data_Process();
 	}
 	//RS232协议
-	else if(huart == &huart2)
+	else if(huart == &huart1)
 	{
-		HAL_UART_Transmit(&huart2, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart1, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
 		RS232_To_LIN(pRS232RxBuff);
 		memset(pRS232RxBuff,0,RS232_MAXSIZE);
 	}
