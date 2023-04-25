@@ -23,10 +23,13 @@ uint16_t EXV_Test_Step;
 uint8_t LIN_Read_Flag = DISABLE;
 //发送写帧的标志位
 uint8_t LIN_Send_Flag = DISABLE;
-//指令重复发送次数
-uint8_t retries = 5;
+//指令重复发送计数器
+uint8_t retries = 0;
 //初始化LIN芯片信息
-struct LIN_Chip_Msg chip[2] = {{0xF5,0xB4,0xFF,0xFC},{0x37,0x76,0xFF,0xFC}};
+struct LIN_Chip_Msg chip[2] = {
+        {LIN_PID_53_0x35,LIN_PID_52_0x34,0xFF,0xFC},
+        {LIN_PID_55_0x37,LIN_PID_54_0x36,0xFF,0xFC}
+};
 //芯片编号
 uint8_t chip_Num;
 
@@ -65,9 +68,7 @@ uint8_t LIN_Check_Sum_En(uint8_t *buf, uint8_t lens)
     {
         chm1 += *(buf+i);
     }
-    ckm = chm1 / 256;
-    ckm = ckm + chm1 % 256;
-    ckm = 0xFF - ckm;
+    ckm = ~(chm1 % 255);
     return ckm;
 }
 /****************************************************************************************
@@ -124,6 +125,11 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 	uint8_t index = 0;
 	chip_Num = pRS232RxBuff[0];
 	EXV_Test_Step = (pRS232RxBuff[1] << 8) | pRS232RxBuff[2];
+    //校验测试步长
+    if(EXV_Test_Step > MAX_STEP)
+    {
+        EXV_Test_Step = MAX_STEP;
+    }
 	pLINTxBuff[index++] = chip[chip_Num].write_PID;
 	pLINTxBuff[index++] = pRS232RxBuff[2];
 	pLINTxBuff[index++] = pRS232RxBuff[1];
@@ -147,12 +153,30 @@ void Send_LIN_Data()
 		LIN_Tx_PID_Data(&huart2,pLINTxBuff,LIN_TX_MAXSIZE - 1,LIN_CK_ENHANCED);
 		LIN_Send_Flag = DISABLE;
 		LIN_Read_Flag = ENABLE;
+        HAL_Delay(20);
 	}
 	if(LIN_Read_Flag)
 	{
 		LIN_Tx_PID(&huart2, chip[chip_Num].read_PID);
-		HAL_Delay(200);
+		HAL_Delay(100);
 	}
+}
+
+/**
+ *  清除数据，清除标志位
+ */
+void LIN_Data_Clear()
+{
+    //读取标志位置为不发送读取数据帧
+    LIN_Read_Flag = DISABLE;
+    //发送标志置为不发送写数据帧
+    LIN_Send_Flag = DISABLE;
+    //重置重试计数器为0
+    retries = 0;
+    //发送响应数据后表示本次测试结束，清空发送数据缓存
+    memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
+    //清除芯片编号
+    chip_Num = 0;
 }
 
 /**
@@ -163,14 +187,7 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 	*pBuff = data >> 8;
 	*(pBuff + 1) = data;
 	HAL_UART_Transmit(&huart1,pBuff,sizeof(data),HAL_MAX_DELAY);
-	//读取标志位置为不发送读取数据帧
-	LIN_Read_Flag = DISABLE;
-	//重置重试的次数为3
-	retries = 5;
-	//发送响应数据后表示本次测试结束，清空发送数据缓存
-	memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
-    //清除芯片编号
-    chip_Num = 0;
+    LIN_Data_Clear();
 }
 
 /**
@@ -187,7 +204,7 @@ void LIN_Data_Process()
 	//pLINRxBuff + 2表示从接收的第3个数据开始，因为接收数组第1个是同步间隔段，第2个是同步段（0x55）
 	ckm = LIN_Check_Sum_En(pLINRxBuff + 2,LIN_CHECK_EN_NUM);
 	//如果校验不通过，丢弃这帧数据
-	if(ckm != pLINRxBuff[LIN_RX_MAXSIZE - 1])
+	if(ckm != pLINRxBuff[LIN_RX_MAXSIZE - 1] || pLINRxBuff[2] == pLINTxBuff[0])
 	{
 		return;
 	}
@@ -197,6 +214,11 @@ void LIN_Data_Process()
 	{
 		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_LIN_COMM_ERROR);
 	}
+    //检查初始化状态
+    else if((pLINRxBuff[3] & EXV_ST_INIT_COMP) == EXV_ST_INIT_NOT || (pLINRxBuff[3] & EXV_ST_INIT_COMP) == EXV_ST_INIT_PROCESS)
+    {
+        return;
+    }
 	//校验故障状态
 	else if((pLINRxBuff[4] & EXV_ST_FAULT_COMP) > 0)
 	{
@@ -249,13 +271,11 @@ void LIN_Data_Process()
 		else
 		{
 			LIN_Send_Flag = ENABLE;
-			retries--;
+			retries++;
 			//当3次电机运动使能后，电机转动步长与测试步长不一致，发送错误信息
-			if(retries <= 0)
+			if(retries > MAX_RETRY_NUM)
 			{
 				Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ERROR);
-				//发送标志置为不发送写数据帧
-				LIN_Send_Flag = DISABLE;
 			}
 		}
 	}

@@ -109,8 +109,8 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_SET);
 
   //测试
-  pRS232RxBuff[0] = 0x00;
-  pRS232RxBuff[1] = 0x01;
+  pRS232RxBuff[0] = 0x01;
+  pRS232RxBuff[1] = 0x00;
   pRS232RxBuff[2] = 0x4a;
   RS232_To_LIN(pRS232RxBuff);
   //测试 end
@@ -204,6 +204,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart == &huart2)
 	{
 		LIN_Data_Process();
+        //HAL_UART_AbortReceive(&huart2);
 	}
 	//RS232协议
 	else if(huart == &huart1)

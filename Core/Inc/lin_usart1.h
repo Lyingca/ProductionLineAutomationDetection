@@ -18,6 +18,10 @@
 #define LIN_CHECK_STD_NUM 8
 //PID+8个数据
 #define LIN_CHECK_EN_NUM 9
+//最大重试次数
+#define MAX_RETRY_NUM 10
+//最大步长
+#define MAX_STEP 480
 
 extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
 
