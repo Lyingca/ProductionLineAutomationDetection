@@ -214,7 +214,7 @@ void LIN_Data_Process()
 	{
 		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_LIN_COMM_ERROR);
 	}
-    //检查初始化状态
+    //检查初始化状态，解决反馈数据中以E2，E3开始的数据帧
     else if((pLINRxBuff[3] & EXV_ST_INIT_COMP) == EXV_ST_INIT_NOT || (pLINRxBuff[3] & EXV_ST_INIT_COMP) == EXV_ST_INIT_PROCESS)
     {
         return;
