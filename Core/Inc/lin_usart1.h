@@ -28,9 +28,13 @@ extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
 //保存LIN芯片的信息
 struct LIN_Chip_Msg
 {
+    //读PID
 	uint8_t read_PID;
+    //写PID
 	uint8_t write_PID;
+    //电机运动使能
 	uint8_t EXV_Move_Enable;
+    //初始化请求
 	uint8_t EXV_Init_Request;
 };
 

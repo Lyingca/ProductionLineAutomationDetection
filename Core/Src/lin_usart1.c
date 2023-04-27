@@ -26,9 +26,10 @@ uint8_t LIN_Send_Flag = DISABLE;
 //指令重复发送计数器
 uint8_t retries = 0;
 //初始化LIN芯片信息
-struct LIN_Chip_Msg chip[2] = {
+struct LIN_Chip_Msg chip[3] = {
         {LIN_PID_53_0x35,LIN_PID_52_0x34,0xFF,0xFC},
-        {LIN_PID_55_0x37,LIN_PID_54_0x36,0xFF,0xFC}
+        {LIN_PID_55_0x37,LIN_PID_54_0x36,0xFF,0xFC},
+        {LIN_PID_32_0x20,LIN_PID_16_0x10,0xFF,0xFC}
 };
 //芯片编号
 uint8_t chip_Num;
@@ -191,6 +192,27 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 }
 
 /**
+ * 检查实际测试芯片和选择芯片是否一致
+ * result：0 - false，1 - true
+ */
+uint8_t Check_Chip_Is_True()
+{
+    uint8_t i = 0, count = 0;
+    for(i = 0;i < LIN_RX_MAXSIZE;i++)
+    {
+        if (pLINRxBuff[i] == chip[chip_Num].read_PID)
+        {
+            count++;
+        }
+    }
+    if (count >= 3)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+/**
  * 数据处理函数
  */
 void LIN_Data_Process()
@@ -201,10 +223,15 @@ void LIN_Data_Process()
 	uint16_t EXV_Run_Step = 0;
 	//通过校验位-校验数据
 	uint8_t ckm = 0;
+    //检查测试芯片和选择芯片是否一致
+    if(!Check_Chip_Is_True())
+    {
+        Send_Resp_Data(RS232_Resp_Result,RS232_RESP_CHIP_ERROR);
+    }
 	//pLINRxBuff + 2表示从接收的第3个数据开始，因为接收数组第1个是同步间隔段，第2个是同步段（0x55）
 	ckm = LIN_Check_Sum_En(pLINRxBuff + 2,LIN_CHECK_EN_NUM);
 	//如果校验不通过，丢弃这帧数据
-	if(ckm != pLINRxBuff[LIN_RX_MAXSIZE - 1] || pLINRxBuff[2] == pLINTxBuff[0])
+	if(ckm != pLINRxBuff[LIN_RX_MAXSIZE - 1] || pLINRxBuff[2] == chip[chip_Num].write_PID)
 	{
 		return;
 	}
