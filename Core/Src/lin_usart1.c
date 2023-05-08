@@ -297,13 +297,13 @@ void LIN_Data_Process()
 		//重试3次发送电机运动使能
 		else
 		{
-			LIN_Send_Flag = ENABLE;
-			retries++;
 			//当3次电机运动使能后，电机转动步长与测试步长不一致，发送错误信息
 			if(retries > MAX_RETRY_NUM)
 			{
 				Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ERROR);
 			}
+            LIN_Send_Flag = ENABLE;
+            retries++;
 		}
 	}
 	//这帧数据解析完成，清空接收缓存数据

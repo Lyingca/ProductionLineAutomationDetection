@@ -109,10 +109,10 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_SET);
 
   //测试
-  pRS232RxBuff[0] = 0x02;
-  pRS232RxBuff[1] = 0x01;
-  pRS232RxBuff[2] = 0x4a;
-  RS232_To_LIN(pRS232RxBuff);
+//  pRS232RxBuff[0] = 0x02;
+//  pRS232RxBuff[1] = 0x01;
+//  pRS232RxBuff[2] = 0x4a;
+//  RS232_To_LIN(pRS232RxBuff);
   //测试 end
 
   /* USER CODE END 2 */
