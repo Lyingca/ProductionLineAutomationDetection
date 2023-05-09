@@ -102,14 +102,18 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   //开启中断接收
   Util_Receive_IT(&huart1);
   Util_Receive_IT(&huart2);
-  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_SET);
+  //使能TJA1028LIN芯片的EN
+  HAL_GPIO_WritePin(TJA1028_EN_GPIO_Port,TJA1028_EN_Pin,GPIO_PIN_SET);
+  //使能TJA1028LIN芯片的RSTN
+  HAL_GPIO_WritePin(TJA1028_RSTN_GPIO_Port,TJA1028_RSTN_Pin,GPIO_PIN_SET);
 
   //测试
-//  pRS232RxBuff[0] = 0x02;
+//  pRS232RxBuff[0] = 0x00;
 //  pRS232RxBuff[1] = 0x01;
 //  pRS232RxBuff[2] = 0x4a;
 //  RS232_To_LIN(pRS232RxBuff);
@@ -203,6 +207,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//LIN协议
 	if(huart == &huart2)
 	{
+        //测试代码
+        HAL_UART_Transmit(&huart3, pLINRxBuff, LIN_RX_MAXSIZE, HAL_MAX_DELAY);
 		LIN_Data_Process();
         //HAL_UART_AbortReceive(&huart2);
 	}

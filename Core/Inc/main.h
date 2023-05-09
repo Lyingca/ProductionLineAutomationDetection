@@ -57,6 +57,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define TJA1028_EN_Pin GPIO_PIN_4
+#define TJA1028_EN_GPIO_Port GPIOA
+#define TJA1028_RSTN_Pin GPIO_PIN_0
+#define TJA1028_RSTN_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

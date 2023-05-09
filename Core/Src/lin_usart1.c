@@ -172,12 +172,14 @@ void LIN_Data_Clear()
     LIN_Read_Flag = DISABLE;
     //发送标志置为不发送写数据帧
     LIN_Send_Flag = DISABLE;
-    //重置重试计数器为0
+    //重置 重试计数器为0
     retries = 0;
     //发送响应数据后表示本次测试结束，清空发送数据缓存
     memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
     //清除芯片编号
     chip_Num = 0;
+    //清除测试步长
+    EXV_Test_Step = 0;
 }
 
 /**
@@ -205,7 +207,7 @@ uint8_t Check_Chip_Is_True()
             count++;
         }
     }
-    if (count >= 3)
+    if (count >= 2)
     {
         return 0;
     }
