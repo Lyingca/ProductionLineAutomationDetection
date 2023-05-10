@@ -36,6 +36,8 @@ struct LIN_Chip_Msg
 	uint8_t EXV_Move_Enable;
     //初始化请求
 	uint8_t EXV_Init_Request;
+    //非初始化请求
+    uint8_t EXV_Not_Init_Request;
 };
 
 //LIN校验模式
