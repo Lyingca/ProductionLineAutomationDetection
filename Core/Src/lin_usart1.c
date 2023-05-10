@@ -206,10 +206,10 @@ uint8_t Check_Chip_Is_True()
         {
             count++;
         }
-    }
-    if (count >= 2)
-    {
-        return 0;
+        if (count >= 2)
+        {
+            return 0;
+        }
     }
     return 1;
 }
