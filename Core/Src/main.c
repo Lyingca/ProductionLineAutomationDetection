@@ -23,8 +23,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "lin_usart1.h"
-#include "rs232_usart2.h"
+#include "lin_usart2.h"
+#include "rs232_usart1.h"
 #include <string.h>
 /* USER CODE END Includes */
 

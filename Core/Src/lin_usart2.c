@@ -5,8 +5,8 @@
  *      Author: 陈骏骏
  */
 
-#include "lin_usart1.h"
-#include "rs232_usart2.h"
+#include "lin_usart2.h"
+#include "rs232_usart1.h"
 #include "usart.h"
 #include <string.h>
 
@@ -206,7 +206,7 @@ uint8_t Check_Chip_Is_True()
         {
             count++;
         }
-        if (count >= 2)
+        if (count >= 3)
         {
             return 0;
         }
