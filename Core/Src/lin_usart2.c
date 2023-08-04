@@ -135,7 +135,7 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 	pLINTxBuff[index++] = pRS232RxBuff[2];
 	pLINTxBuff[index++] = pRS232RxBuff[1];
 	pLINTxBuff[index++] = chip[chip_Num].EXV_Move_Enable;
-	pLINTxBuff[index++] = chip[chip_Num].EXV_Init_Request;
+	pLINTxBuff[index++] = chip[chip_Num].EXV_Not_Init_Request;
 	//剩余的字节数有0xFF填充
 	while(index < LIN_TX_MAXSIZE - 1)
 	{
@@ -296,18 +296,19 @@ void LIN_Data_Process()
 		{
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OK);
 		}
-		//重试3次发送电机运动使能
+		//重试10次发送电机运动使能
 		else
 		{
-			//当3次电机运动使能后，电机转动步长与测试步长不一致，发送错误信息
+			//当10次电机运动使能后，电机转动步长与测试步长不一致，发送错误信息
 			if(retries > MAX_RETRY_NUM)
 			{
 				Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ERROR);
 			}
-            LIN_Send_Flag = ENABLE;
-            retries++;
+            else
+            {
+                LIN_Send_Flag = ENABLE;
+                retries++;
+            }
 		}
 	}
-	//这帧数据解析完成，清空接收缓存数据
-	memset(pLINRxBuff,0,LIN_RX_MAXSIZE);
 }

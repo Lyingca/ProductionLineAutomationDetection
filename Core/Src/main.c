@@ -88,7 +88,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+    HAL_Delay(700);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -102,7 +102,6 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   //开启中断接收
   Util_Receive_IT(&huart1);
@@ -208,9 +207,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart == &huart2)
 	{
         //测试代码
-        HAL_UART_Transmit(&huart3, pLINRxBuff, LIN_RX_MAXSIZE, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&huart1, pLINRxBuff, LIN_RX_MAXSIZE, HAL_MAX_DELAY);
 		LIN_Data_Process();
-        //HAL_UART_AbortReceive(&huart2);
+        //这帧数据解析完成，清空接收缓存数组
+        memset(pLINRxBuff,0,LIN_RX_MAXSIZE);
 	}
 	//RS232协议
 	else if(huart == &huart1)
