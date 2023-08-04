@@ -207,7 +207,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart == &huart2)
 	{
         //测试代码
-        HAL_UART_Transmit(&huart1, pLINRxBuff, LIN_RX_MAXSIZE, HAL_MAX_DELAY);
+//        HAL_UART_Transmit(&huart1, pLINRxBuff, LIN_RX_MAXSIZE, HAL_MAX_DELAY);
 		LIN_Data_Process();
         //这帧数据解析完成，清空接收缓存数组
         memset(pLINRxBuff,0,LIN_RX_MAXSIZE);
