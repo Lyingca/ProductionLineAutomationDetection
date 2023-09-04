@@ -124,16 +124,16 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 {
 	LIN_Send_Flag = DISABLE;
 	uint8_t index = 0;
-	chip_Num = pRS232RxBuff[0];
-	EXV_Test_Step = (pRS232RxBuff[1] << 8) | pRS232RxBuff[2];
+	chip_Num = pRS232RxBuff[1];
+	EXV_Test_Step = (pRS232RxBuff[2] << 8) | pRS232RxBuff[3];
     //校验测试步长
     if(EXV_Test_Step > MAX_STEP)
     {
         EXV_Test_Step = MAX_STEP;
     }
 	pLINTxBuff[index++] = chip[chip_Num].write_PID;
+	pLINTxBuff[index++] = pRS232RxBuff[3];
 	pLINTxBuff[index++] = pRS232RxBuff[2];
-	pLINTxBuff[index++] = pRS232RxBuff[1];
 	pLINTxBuff[index++] = chip[chip_Num].EXV_Move_Enable;
 	pLINTxBuff[index++] = chip[chip_Num].EXV_Not_Init_Request;
 	//剩余的字节数有0xFF填充
@@ -189,7 +189,7 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 {
 	*pBuff = data >> 8;
 	*(pBuff + 1) = data;
-	HAL_UART_Transmit(&huart1,pBuff,sizeof(data),HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1,pBuff,3,HAL_MAX_DELAY);
     LIN_Data_Clear();
 }
 
@@ -220,7 +220,7 @@ uint8_t Check_Chip_Is_True()
 void LIN_Data_Process()
 {
 	//响应数组
-	uint8_t RS232_Resp_Result[2] = {0};
+	uint8_t RS232_Resp_Result[3] = {0x0D,0x0D,0x0D};
 	//电机转动步长
 	uint16_t EXV_Run_Step = 0;
 	//通过校验位-校验数据

@@ -215,8 +215,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//RS232协议
 	else if(huart == &huart1)
 	{
-		HAL_UART_Transmit(&huart1, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
-		RS232_To_LIN(pRS232RxBuff);
+        if(pRS232RxBuff[RS232_MAXSIZE - 1] == 0x0D)
+        {
+            HAL_UART_Transmit(&huart1, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
+            RS232_To_LIN(pRS232RxBuff);
+        }
 		memset(pRS232RxBuff,0,RS232_MAXSIZE);
 	}
 	Util_Receive_IT(huart);
