@@ -46,7 +46,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t RevByte = 0;
+uint8_t pRevByte = 0;
+uint8_t RxFlag = 0;
+uint8_t RxLength = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,8 +66,6 @@ PUTCHAR_PROTOTYPE
   HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
   return ch;
 }
-
-void Util_Receive_IT(UART_HandleTypeDef *huart);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -105,6 +106,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //开启中断接收
   Util_Receive_IT(&huart1);
+  //一定要先清除串口空闲中断，然后在打开串口空闲中断，因为串口初始化完成后会自动将IDLE置位，
+  // 导致还没有接受数据就进入到中断里面去了，所以打开IDLE之前，先把它清楚掉
+  //清除串口空闲中断
+  __HAL_UART_CLEAR_IDLEFLAG(&huart2);
+  //打开串口空闲中断
+  __HAL_UART_ENABLE_IT(&huart2,UART_IT_IDLE);
   Util_Receive_IT(&huart2);
   //使能TJA1028LIN芯片的EN
   HAL_GPIO_WritePin(TJA1028_EN_GPIO_Port,TJA1028_EN_Pin,GPIO_PIN_SET);
@@ -125,8 +132,13 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  //循环发送数据
-	  Send_LIN_Data();
+      //循环发送数据
+      Send_LIN_Data();
+      if (RxFlag)
+      {
+          LIN_Data_Process(RxLength);
+          RxFlag = 0;
+      }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -180,10 +192,10 @@ void Util_Receive_IT(UART_HandleTypeDef *huart)
 {
 	if(huart == &huart2)
 	{
-		if(HAL_UART_Receive_IT(huart, pLINRxBuff, LIN_RX_MAXSIZE) != HAL_OK)
-		{
-			Error_Handler();
-		}
+        if(HAL_UART_Receive_IT(huart, &RevByte, 1) != HAL_OK)
+        {
+            Error_Handler();
+        }
 	}
 	else if(huart == &huart1)
 	{
@@ -206,11 +218,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//LIN协议
 	if(huart == &huart2)
 	{
-        //测试代码
-//        HAL_UART_Transmit(&huart1, pLINRxBuff, LIN_RX_MAXSIZE, HAL_MAX_DELAY);
-		LIN_Data_Process();
-        //这帧数据解析完成，清空接收缓存数组
-        memset(pLINRxBuff,0,LIN_RX_MAXSIZE);
+        pLINRxBuff[pRevByte] = RevByte;
+        pRevByte++;
 	}
 	//RS232协议
 	else if(huart == &huart1)
@@ -223,6 +232,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		memset(pRS232RxBuff,0,RS232_MAXSIZE);
 	}
 	Util_Receive_IT(huart);
+}
+
+//串口空闲中断
+void UART_IDLECallBack(UART_HandleTypeDef *huart)
+{
+    if(huart == &huart2)
+    {
+        if((__HAL_UART_GET_FLAG(huart,UART_FLAG_IDLE) != RESET))
+        {
+            __HAL_UART_CLEAR_IDLEFLAG(&huart2);//清除标志位
+            RxFlag = 1;
+            RxLength = pRevByte;
+            pRevByte = 0;
+        }
+    }
 }
 
 /**

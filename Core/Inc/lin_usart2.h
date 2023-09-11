@@ -18,8 +18,6 @@
 #define LIN_CHECK_STD_NUM 8
 //PID+8个数据
 #define LIN_CHECK_EN_NUM 9
-//最大重试次数
-#define MAX_RETRY_NUM 10
 //最大步长
 #define MAX_STEP 480
 
@@ -178,6 +176,6 @@ typedef enum
 
 void RS232_To_LIN(uint8_t* pRS232Buff);
 void Send_LIN_Data();
-void LIN_Data_Process();
+void LIN_Data_Process(uint8_t RxLength);
 
 #endif /* INC_LIN_USART1_H_ */
