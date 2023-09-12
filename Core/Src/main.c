@@ -46,10 +46,14 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t RevByte = 0;
-uint8_t pRevByte = 0;
-uint8_t RxFlag = 0;
-uint8_t RxLength = 0;
+uint8_t LINRevByte = 0;
+uint8_t pLINRevByte = 0;
+uint8_t LINRxFlag = 0;
+uint8_t LINRxLength = 0;
+uint8_t RS232RevByte = 0;
+uint8_t pRS232RevByte = 0;
+uint8_t RS232RxFlag = 0;
+uint8_t RS232RxLength = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,14 +93,16 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-    HAL_Delay(700);
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+    //解决断电后重新上电，程序运行异常的问题
+    //原因：在程序刚开始时加上一个延时，因为外设上电时间不够，所以加个延时，等待外设上电，再进行初始化
+//    HAL_Delay(700);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -104,6 +110,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  //清除串口空闲中断
+  __HAL_UART_CLEAR_IDLEFLAG(&huart1);
+  //打开串口空闲中断
+  __HAL_UART_ENABLE_IT(&huart1,UART_IT_IDLE);
   //开启中断接收
   Util_Receive_IT(&huart1);
   //一定要先清除串口空闲中断，然后在打开串口空闲中断，因为串口初始化完成后会自动将IDLE置位，
@@ -134,10 +144,17 @@ int main(void)
     /* USER CODE END WHILE */
       //循环发送数据
       Send_LIN_Data();
-      if (RxFlag)
+      if (LINRxFlag)
       {
-          LIN_Data_Process(RxLength);
-          RxFlag = 0;
+          LIN_Data_Process(LINRxLength);
+          LINRxFlag = 0;
+      }
+      if (RS232RxFlag && RS232RxLength == RS232_MAXSIZE && pRS232RxBuff[RS232_MAXSIZE - 1] == 0x0D)
+      {
+          HAL_UART_Transmit(&huart1, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
+          RS232_To_LIN(pRS232RxBuff);
+          memset(pRS232RxBuff,0,RS232_MAXSIZE);
+          RS232RxFlag = 0;
       }
     /* USER CODE BEGIN 3 */
   }
@@ -192,14 +209,14 @@ void Util_Receive_IT(UART_HandleTypeDef *huart)
 {
 	if(huart == &huart2)
 	{
-        if(HAL_UART_Receive_IT(huart, &RevByte, 1) != HAL_OK)
+        if(HAL_UART_Receive_IT(huart, &LINRevByte, 1) != HAL_OK)
         {
             Error_Handler();
         }
 	}
 	else if(huart == &huart1)
 	{
-		if(HAL_UART_Receive_IT(huart, pRS232RxBuff, RS232_MAXSIZE) != HAL_OK)
+		if(HAL_UART_Receive_IT(huart, &RS232RevByte, 1) != HAL_OK)
 		{
 			Error_Handler();
 		}
@@ -218,18 +235,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//LIN协议
 	if(huart == &huart2)
 	{
-        pLINRxBuff[pRevByte] = RevByte;
-        pRevByte++;
+        if (pLINRevByte < LIN_RX_MAXSIZE)
+        {
+            pLINRxBuff[pLINRevByte] = LINRevByte;
+        }
+        pLINRevByte++;
 	}
 	//RS232协议
 	else if(huart == &huart1)
 	{
-        if(pRS232RxBuff[RS232_MAXSIZE - 1] == 0x0D)
+        if (pRS232RevByte < RS232_MAXSIZE)
         {
-            HAL_UART_Transmit(&huart1, pRS232RxBuff, RS232_MAXSIZE, HAL_MAX_DELAY);
-            RS232_To_LIN(pRS232RxBuff);
+            pRS232RxBuff[pRS232RevByte] = RS232RevByte;
         }
-		memset(pRS232RxBuff,0,RS232_MAXSIZE);
+        pRS232RevByte++;
 	}
 	Util_Receive_IT(huart);
 }
@@ -242,9 +261,19 @@ void UART_IDLECallBack(UART_HandleTypeDef *huart)
         if((__HAL_UART_GET_FLAG(huart,UART_FLAG_IDLE) != RESET))
         {
             __HAL_UART_CLEAR_IDLEFLAG(&huart2);//清除标志位
-            RxFlag = 1;
-            RxLength = pRevByte;
-            pRevByte = 0;
+            LINRxFlag = 1;
+            LINRxLength = pLINRevByte;
+            pLINRevByte = 0;
+        }
+    }
+    else if (huart == &huart1)
+    {
+        if((__HAL_UART_GET_FLAG(huart,UART_FLAG_IDLE) != RESET))
+        {
+            __HAL_UART_CLEAR_IDLEFLAG(&huart1);//清除标志位
+            RS232RxFlag = 1;
+            RS232RxLength = pRS232RevByte;
+            pRS232RevByte = 0;
         }
     }
 }
