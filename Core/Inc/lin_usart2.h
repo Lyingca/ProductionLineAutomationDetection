@@ -20,6 +20,8 @@
 #define LIN_CHECK_EN_NUM 9
 //最大步长
 #define MAX_STEP 480
+//软件版本标志位
+#define EXV_SW_VERSION_MASK 0x1F
 
 extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
 

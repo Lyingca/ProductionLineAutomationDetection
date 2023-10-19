@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-#define RS232_MAXSIZE 6
+#define RS232_MAXSIZE 8
 
 extern uint8_t pRS232RxBuff[RS232_MAXSIZE];
 
@@ -26,7 +26,8 @@ typedef enum
 	RS232_RESP_OVER_VOLTAGE = 0x38A,
 	RS232_RESP_UNDER_VOLTAGE = 0x38B,
 	RS232_RESP_OVERTEMP = 0x38C,
-    RS232_RESP_CHIP_ERROR = 0x38E
+    RS232_RESP_CHIP_ERROR = 0x38E,
+    RS232_RESP_EXV_SW_ERROR = 0x38F
 }RS232_Resp_Rsult;
 
 #endif /* INC_RS232_USART2_H_ */
