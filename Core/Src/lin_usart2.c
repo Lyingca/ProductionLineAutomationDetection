@@ -24,13 +24,16 @@ uint8_t LIN_Read_Flag = DISABLE;
 //发送写帧的标志位
 uint8_t LIN_Send_Flag = DISABLE;
 //初始化LIN芯片信息
-struct LIN_Chip_Msg chip[3] = {
+struct LIN_Chip_Msg chip[4] = {
         {LIN_PID_53_0x35,LIN_PID_52_0x34,0xFF,0xFD,0xFC},
         {LIN_PID_55_0x37,LIN_PID_54_0x36,0xFF,0xFD,0xFC},
-        {LIN_PID_32_0x20,LIN_PID_16_0x10,0xFF,0xFD,0xFC}
+        {LIN_PID_32_0x20,LIN_PID_16_0x10,0xFF,0xFD,0xFC},
+        {LIN_PID_41_0x29,LIN_PID_25_0x19,0xFF,0xFD,0xFC}
 };
 //芯片编号
 uint8_t chip_Num;
+//发送上位机的标志位
+uint8_t RS_232_Send_Flag = DISABLE;
 
 /****************************************************************************************
 ** 函数名称: LINCheckSum----标准校验
@@ -142,6 +145,7 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 	}
 	LIN_Send_Flag = ENABLE;
     LIN_Read_Flag = ENABLE;
+    RS_232_Send_Flag = ENABLE;
 }
 
 /**
@@ -166,10 +170,6 @@ void Send_LIN_Data()
  */
 void LIN_Data_Clear()
 {
-    //读取标志位置为不发送读取数据帧
-    LIN_Read_Flag = DISABLE;
-    //发送标志置为不发送写数据帧
-    LIN_Send_Flag = DISABLE;
     //发送响应数据后表示本次测试结束，清空发送数据缓存
     memset(pLINTxBuff,0,LIN_TX_MAXSIZE);
     //清除芯片编号
@@ -185,8 +185,19 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 {
 	*(pBuff + 2) = data >> 8;
 	*(pBuff + 3) = data;
-	HAL_UART_Transmit(&huart1,pBuff,RS232_MAXSIZE,HAL_MAX_DELAY);
-    LIN_Data_Clear();
+    if(RS_232_Send_Flag)
+    {
+        HAL_UART_Transmit(&huart1,pBuff,RS232_MAXSIZE,HAL_MAX_DELAY);
+        RS_232_Send_Flag = DISABLE;
+    }
+    if (RS232_RESP_CHIP_ERROR == data)
+    {
+        //读取标志位置为不发送读取数据帧
+        LIN_Read_Flag = DISABLE;
+        //发送标志置为不发送写数据帧
+        LIN_Send_Flag = DISABLE;
+    }
+//    LIN_Data_Clear();
 }
 
 /**
