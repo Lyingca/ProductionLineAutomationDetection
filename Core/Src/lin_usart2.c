@@ -32,7 +32,7 @@ struct LIN_Chip_Msg chip[3] = {
 //芯片编号
 uint8_t chip_Num;
 //EXV软件版本
-uint16_t EXV_SW_Version;
+uint8_t EXV_SW_Version;
 
 /****************************************************************************************
 ** 函数名称: LINCheckSum----标准校验
@@ -127,7 +127,7 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 	uint8_t index = 0;
 	chip_Num = pRS232RxBuff[1];
 	EXV_Test_Step = (pRS232RxBuff[2] << 8) | pRS232RxBuff[3];
-    EXV_SW_Version = (pRS232RxBuff[4] << 8) | pRS232RxBuff[5];
+    EXV_SW_Version = pRS232RxBuff[5];
     //校验测试步长
     if(EXV_Test_Step > MAX_STEP)
     {
@@ -137,7 +137,13 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 	pLINTxBuff[index++] = pRS232RxBuff[3];
 	pLINTxBuff[index++] = pRS232RxBuff[2];
 	pLINTxBuff[index++] = chip[chip_Num].EXV_Move_Enable;
-	pLINTxBuff[index++] = chip[chip_Num].EXV_Not_Init_Request;
+    if (EXV_Test_Step == 0)
+    {
+        pLINTxBuff[index++] = chip[chip_Num].EXV_Init_Request;
+    } else
+    {
+        pLINTxBuff[index++] = chip[chip_Num].EXV_Not_Init_Request;
+    }
 	//剩余的字节数有0xFF填充
 	while(index < LIN_TX_MAXSIZE - 1)
 	{
@@ -155,12 +161,12 @@ void Send_LIN_Data()
 	if(LIN_Send_Flag)
 	{
 		LIN_Tx_PID_Data(&huart2,pLINTxBuff,LIN_TX_MAXSIZE - 1,LIN_CK_ENHANCED);
-        HAL_Delay(20);
+        HAL_Delay(50);
 	}
 	if(LIN_Read_Flag)
 	{
 		LIN_Tx_PID(&huart2, chip[chip_Num].read_PID);
-		HAL_Delay(100);
+		HAL_Delay(50);
 	}
 }
 
@@ -188,7 +194,7 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 {
 	*(pBuff + 2) = data >> 8;
 	*(pBuff + 3) = data;
-	HAL_UART_Transmit(&huart1,pBuff,RS232_MAXSIZE - 2,HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1,pBuff,RS232_MAXSIZE,HAL_MAX_DELAY);
     LIN_Data_Clear();
 }
 
@@ -198,14 +204,15 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 void LIN_Data_Process(uint8_t RxLength)
 {
 	//响应数组
-	uint8_t RS232_Resp_Result[RS232_MAXSIZE - 2] = {0x00,chip_Num,0x00,0x00,0x00,0x0D};
+	uint8_t RS232_Resp_Result[RS232_MAXSIZE] = {0x00,chip_Num,0x00,0x00,0x00,0x00,0x00,0x0D};
 	//电机转动步长
 	uint16_t EXV_Run_Step = 0;
 	//通过校验位-校验数据
 	uint8_t ckm = 0;
     //pLINRxBuff + 2表示从接收的第3个数据开始，因为接收数组第1个是同步间隔段，第2个是同步段（0x55）
     ckm = LIN_Check_Sum_En(pLINRxBuff + 2,LIN_CHECK_EN_NUM);
-    uint16_t Checked_EXV_SW_Version = pLINRxBuff[7] & EXV_SW_VERSION_MASK;
+    uint8_t Checked_EXV_SW_Version = pLINRxBuff[7] & EXV_SW_VERSION_MASK;
+    RS232_Resp_Result[5] = Checked_EXV_SW_Version;
     //检查LIN是否正常通信
     if(RxLength < LIN_RX_MAXSIZE)
     {
