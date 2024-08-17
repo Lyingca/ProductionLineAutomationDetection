@@ -137,7 +137,7 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 	pLINTxBuff[index++] = pRS232RxBuff[3];
 	pLINTxBuff[index++] = pRS232RxBuff[2];
 	pLINTxBuff[index++] = chip[chip_Num].EXV_Move_Enable;
-    if (EXV_Test_Step == 0)
+    if (pRS232RxBuff[7] == 1)
     {
         pLINTxBuff[index++] = chip[chip_Num].EXV_Init_Request;
     } else
@@ -204,7 +204,7 @@ void Send_Resp_Data(uint8_t* pBuff,uint16_t data)
 void LIN_Data_Process(uint8_t RxLength)
 {
 	//响应数组
-	uint8_t RS232_Resp_Result[RS232_MAXSIZE] = {0x00,chip_Num,0x00,0x00,0x00,0x00,0x00,0x0D};
+	uint8_t RS232_Resp_Result[RS232_MAXSIZE] = {0x00,chip_Num,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0D};
 	//电机转动步长
 	uint16_t EXV_Run_Step = 0;
 	//通过校验位-校验数据
