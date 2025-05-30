@@ -19,7 +19,7 @@
 //PID+8个数据
 #define LIN_CHECK_EN_NUM 9
 //最大步长
-#define MAX_STEP 480
+#define MAX_STEP 500
 
 extern uint8_t pLINRxBuff[LIN_RX_MAXSIZE];
 
@@ -31,11 +31,11 @@ struct LIN_Chip_Msg
     //写PID
 	uint8_t write_PID;
     //电机运动使能
-	uint8_t EXV_Move_Enable;
+	uint16_t EXV_Move_Enable;
     //初始化请求
-	uint8_t EXV_Init_Request;
+	uint16_t EXV_Init_Request;
     //非初始化请求
-    uint8_t EXV_Not_Init_Request;
+    uint16_t EXV_Not_Init_Request;
 };
 
 //LIN校验模式
@@ -145,23 +145,23 @@ typedef enum
 	EXV_ST_FAULT_SHORTED = 0x01,
 	EXV_ST_FAULT_OPENLOAD = 0x02,
 	EXV_ST_FAULT_OVERTEMP = 0x03,
-	EXV_ST_FAULT_ACTUATORFAULT = 0x05
+    EXV_OVERTEMP_OVER = 0x05
 }EXV_St_Fault;
 
 //电压状态
 typedef enum
 {
 	EXV_ST_VOLTAGE_OK = 0x00,
-	EXV_ST_VOLTAGE_OVER = 0x10,
-	EXV_ST_VOLTAGE_UNDER = 0x20
+	EXV_ST_VOLTAGE_OVER = 0x20,
+	EXV_ST_VOLTAGE_UNDER = 0x40
 }EXV_St_Voltage;
 
 //温度状态
-typedef enum
-{
-	EXV_OVERTEMP_OK = 0x00,
-	EXV_OVERTEMP_OVER = 0x40
-}EXV_W_OverTemp;
+//typedef enum
+//{
+//	EXV_OVERTEMP_OK = 0x00,
+//	EXV_OVERTEMP_OVER = 0x40
+//}EXV_W_OverTemp;
 
 //电机信息比较值
 typedef enum
@@ -169,9 +169,8 @@ typedef enum
 	EXV_F_RESP_COMP = 0x01,
 	EXV_ST_INIT_COMP = 0x0C,
 	EXV_ST_RUN_COMP = 0x10,
-	EXV_ST_FAULT_COMP = 0x0F,
-	EXV_ST_VOLTAGE_COMP = 0x30,
-	EXV_OVERTEMP_COMP = 0xC0
+	EXV_ST_FAULT_COMP = 0x1F,
+	EXV_ST_VOLTAGE_COMP = 0x60,
 }EXV_St_Comp;
 
 void RS232_To_LIN(uint8_t* pRS232Buff);

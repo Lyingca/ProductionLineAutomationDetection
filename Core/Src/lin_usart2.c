@@ -24,11 +24,9 @@ uint8_t LIN_Read_Flag = DISABLE;
 //发送写帧的标志位
 uint8_t LIN_Send_Flag = DISABLE;
 //初始化LIN芯片信息
-struct LIN_Chip_Msg chip[4] = {
-        {LIN_PID_53_0x35,LIN_PID_52_0x34,0xFF,0xFD,0xFC},
-        {LIN_PID_55_0x37,LIN_PID_54_0x36,0xFF,0xFD,0xFC},
-        {LIN_PID_32_0x20,LIN_PID_16_0x10,0xFF,0xFD,0xFC},
-        {LIN_PID_41_0x29,LIN_PID_25_0x19,0xFF,0xFD,0xFC}
+struct LIN_Chip_Msg chip[2] = {
+        {LIN_PID_07_0x07,LIN_PID_02_0x02,0x400,0x800,0x00},
+        {LIN_PID_06_0x06,LIN_PID_02_0x02,0x400,0x800,0x00}
 };
 //芯片编号
 uint8_t chip_Num;
@@ -125,7 +123,7 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
 {
 	LIN_Send_Flag = DISABLE;
     LIN_Read_Flag = DISABLE;
-	uint8_t index = 0;
+    uint16_t testIndex = 0;
 	chip_Num = pRS232RxBuff[1];
 	EXV_Test_Step = (pRS232RxBuff[2] << 8) | pRS232RxBuff[3];
     //校验测试步长
@@ -133,23 +131,24 @@ void RS232_To_LIN(uint8_t* pRS232Buff)
     {
         EXV_Test_Step = MAX_STEP;
     }
-	pLINTxBuff[index++] = chip[chip_Num].write_PID;
-	pLINTxBuff[index++] = pRS232RxBuff[3];
-	pLINTxBuff[index++] = pRS232RxBuff[2];
-	pLINTxBuff[index++] = chip[chip_Num].EXV_Move_Enable;
+    pLINTxBuff[0] = chip[chip_Num].write_PID;
+    pLINTxBuff[1] = 0xFF;
+    pLINTxBuff[2] = 0xFF;
     if(pRS232RxBuff[5])
     {
-        pLINTxBuff[index++] = chip[chip_Num].EXV_Init_Request;
+        testIndex = EXV_Test_Step | chip[chip_Num].EXV_Move_Enable | chip[chip_Num].EXV_Init_Request;
     }
     else
     {
-        pLINTxBuff[index++] = chip[chip_Num].EXV_Not_Init_Request;
+        testIndex = EXV_Test_Step | chip[chip_Num].EXV_Move_Enable | chip[chip_Num].EXV_Not_Init_Request;
     }
-	//剩余的字节数有0xFF填充
-	while(index < LIN_TX_MAXSIZE - 1)
-	{
-		pLINTxBuff[index++] = 0xFF;
-	}
+    pLINTxBuff[3] = testIndex & 0xFF;
+    pLINTxBuff[4] = testIndex >> 8;
+    //剩余的字节数用0xFF填充
+    pLINTxBuff[5] = 0xFF;
+    pLINTxBuff[6] = 0xFF;
+    pLINTxBuff[7] = 0xFF;
+    pLINTxBuff[8] = 0xFF;
 	LIN_Send_Flag = ENABLE;
     LIN_Read_Flag = ENABLE;
     RS_232_Send_Flag = ENABLE;
@@ -256,8 +255,8 @@ void LIN_Data_Process(uint8_t RxLength)
 		case EXV_ST_FAULT_OVERTEMP:
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_SHUTDOWN);
 			break;
-		case EXV_ST_FAULT_ACTUATORFAULT:
-			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_ACTUATOR_FAULT);
+		case EXV_OVERTEMP_OVER:
+			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OVERTEMP);
 			break;
 		}
 	}
@@ -274,11 +273,6 @@ void LIN_Data_Process(uint8_t RxLength)
 			Send_Resp_Data(RS232_Resp_Result,RS232_RESP_UNDER_VOLTAGE);
 			break;
 		}
-	}
-	//校验温度状态
-	else if((pLINRxBuff[4] & EXV_OVERTEMP_COMP) == EXV_OVERTEMP_OVER)
-	{
-		Send_Resp_Data(RS232_Resp_Result,RS232_RESP_OVERTEMP);
 	}
 	//电机停止转动
 	else if((pLINRxBuff[3] & EXV_ST_RUN_COMP) == EXV_ST_RUN_NOT_MOVE)
